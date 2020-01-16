@@ -209,9 +209,18 @@ Foam::RegularizationModel::RegularizationModel
 :
     // Set the pointer to runTime
     runTime_(U.time()),
-
-    // Set the pointer to the mesh
     mesh_(U.mesh()),
+
+    regOn_(true),
+    extpFilterFieldDivFree_(true),
+    k_(0.5),
+
+    // get regularization sub dictionary from fvSolution
+    regDict_(mesh_.solutionDict().subDict("regularization")),
+
+    // get LES filter specified in the regularization dictionary
+    filterPtr_(LESfilter::New(mesh_, regDict_)),
+    filter_(filterPtr_()),
 
     // Set the pointer to the velocity, flux and pressure-correction field
     U_(U),
@@ -222,10 +231,6 @@ Foam::RegularizationModel::RegularizationModel
     pRefValue_(pRefValue),
 
     nNonOrthCorr_(nNonOrthCorr),
-
-    regOn_(true),
-
-    extpFilterFieldDivFree_(true),
 
     Ue_
     (
@@ -257,15 +262,6 @@ Foam::RegularizationModel::RegularizationModel
         dimensionedVector("", dimVelocity, vector::zero)
     ),
 
-    // Adam-Bashforth extrapolation coefficient
-    k_(0.5),
-
-    // get regularization sub dictionary from fvSolution
-    regDict_(mesh_.solutionDict().subDict("regularization")),
-
-    // get LES filter specified in the regularization dictionary
-    filterPtr_(LESfilter::New(mesh_, regDict_)),
-    filter_(filterPtr_()),
 
     // Initialize the convection term field
     C_

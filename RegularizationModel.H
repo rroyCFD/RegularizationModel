@@ -25,7 +25,7 @@ Class
     Foam::RegularizationModel
 
 Description:
-    RegularizationModel regularization of the non-linear convection term
+    Regularization of the non-linear convection term
 
 SourceFiles
     RegularizationModel.C
@@ -56,7 +56,24 @@ class RegularizationModel
         //- Mesh pointer
         const fvMesh& mesh_;
 
-        // Pointer to solver fields
+         // regularization On or projection?
+        bool regOn_;
+
+        // make extrapolated fields divergence free?
+        bool extpFilterFieldDivFree_;
+
+        // Adam-bashforth extrapolation coefficient
+        scalar k_;
+
+        // regularization dict: contaning regularization and filter types
+        const dictionary regDict_;
+
+        // LES filter for U and phi
+        autoPtr<LESfilter> filterPtr_;
+        LESfilter& filter_;
+
+
+    // Pointer to solver fields and scalars
         //- Extrapolated velocity field pointer
         const volVectorField& U_;
 
@@ -73,27 +90,11 @@ class RegularizationModel
         // number of non-orthogonal correctors
         const label nNonOrthCorr_;
 
-        // regularization On or projection?
-        bool regOn_;
-
-
-        bool extpFilterFieldDivFree_;
-
         // extrapolated velocity field
         volVectorField Ue_;
 
         // extrapolated filtered velocity field
         volVectorField Uef_;
-
-        // Adam-bashforth extrapolation coefficient
-        scalar k_;
-
-        // Regularization dict: contaning regularization and filter types
-        const dictionary regDict_;
-
-        // LES filter for U and phi
-        autoPtr<LESfilter> filterPtr_;
-        LESfilter& filter_;
 
         // convection term
         volVectorField C_;
