@@ -91,6 +91,9 @@ void Foam::RegularizationModel::setDivergenceFree
 
     dimensionedScalar dt = runTime_.deltaT();
 
+    // initialize pp to zero
+    pp_.primitiveFieldRef() = 0.0;
+
     for (label nonOrth = 0; nonOrth <= nNonOrthCorr_; nonOrth++)
     {
         fvScalarMatrix ppEqn
@@ -120,6 +123,7 @@ void Foam::RegularizationModel::setDivergenceFree
     vvf_.correctBoundaryConditions();
 
     Info << endl;
+
     return;
 }
 
@@ -242,11 +246,9 @@ Foam::RegularizationModel::RegularizationModel
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        //U_
         mesh_,
         dimensionedVector("", dimVelocity, vector::zero)
     ),
-
     Uef_
     (
         IOobject
@@ -257,12 +259,9 @@ Foam::RegularizationModel::RegularizationModel
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        //U_
         mesh_,
         dimensionedVector("", dimVelocity, vector::zero)
     ),
-
-
     // Initialize the convection term field
     C_
     (
