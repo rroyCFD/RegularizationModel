@@ -1,0 +1,300 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "RegularizationModel.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+    defineTypeNameAndDebug(RegularizationModel, 0);
+}
+
+
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+
+surfaceScalarField Foam::RegularizationModel::surfaceFieldFilter
+(const surfaceScalarField& ssf_)
+{
+    volVectorField vvf_(ssf_.name(), fvc::reconstruct(ssf_));
+    vvf_ = filter_(vvf_);
+
+    return(fvc::flux(vvf_));
+}
+
+// explicit convection function
+inline volVectorField Foam::RegularizationModel::convOperator
+(
+    const surfaceScalarField& ssf_,
+    const volVectorField& vvf_
+)
+{
+    // cross product of the convection operation
+    if(extpFilterFieldDivFree_)
+    {
+       return (fvc::div(ssf_, vvf_, "div(phi,U)"));
+    }
+    else
+    {
+        return (fvc::div(ssf_, vvf_, "div(phi,U)") - fvc::div(ssf_)*vvf_);
+    }
+}
+
+
+void Foam::RegularizationModel::calcContinuityError (surfaceScalarField& ssf_)
+{
+    volScalarField contErr(fvc::div(ssf_));
+
+    scalar sumLocalContErr(
+        runTime_.deltaTValue()*
+        mag(contErr)().weightedAverage(mesh_.V()).value());
+
+    scalar globalContErr(
+        runTime_.deltaTValue()*
+        contErr.weightedAverage(mesh_.V()).value());
+
+    Info<< "time step continuity errors : sum local = " << sumLocalContErr
+        << ", global = " << globalContErr << endl;
+}
+
+// solve a poison pressure equation to make filtered flux divergence free
+void Foam::RegularizationModel::setDivergenceFree
+(
+    surfaceScalarField& ssf_,
+    volVectorField& vvf_
+)
+{
+    Info << "continuity error before correction" << endl;
+    calcContinuityError(ssf_);
+
+    dimensionedScalar dt = runTime_.deltaT();
+
+    for (label nonOrth = 0; nonOrth <= nNonOrthCorr_; nonOrth++)
+    {
+        fvScalarMatrix ppEqn
+        (
+          fvm::laplacian(pp_, "laplacian(p)") == (fvc::div(ssf_)*((k_ + 0.5)/dt) )
+        );
+        // no correction to reference cell pressure
+        ppEqn.setReference(pRefCell_, 0);
+
+        if (nonOrth < nNonOrthCorr_)
+        {
+            ppEqn.solve(mesh_.solver(pp_.name()));
+        }
+        else
+        {
+            ppEqn.solve(mesh_.solver(pp_.name()+"Final")); // pp_.select(1)
+
+            // Info << "Making " << ssf_.name() << " divergence free" << endl;
+            ssf_ -= (ppEqn.flux() * (dt/(k_ + 0.5)) );
+        }
+    }
+
+    Info << "continuity error after correction" << endl;
+    calcContinuityError(ssf_);
+
+    vvf_ -= (fvc::grad(pp_, "grad(p)") * (dt/(k_+ 0.5)) );
+    vvf_.correctBoundaryConditions();
+
+    Info << endl;
+    return;
+}
+
+
+// compute and update the convection term
+void Foam::RegularizationModel::update()
+{
+    // Extrapolate fields to n+1 time-step
+    Ue_= ((1+k_)*U_.oldTime() - k_*U_.oldTime().oldTime());
+    Ue_.correctBoundaryConditions();
+
+    surfaceScalarField phie_
+    (
+        "phie",
+        ((1+k_)*phi_.oldTime() - k_*phi_.oldTime().oldTime())
+    );
+    Info << "Continuity error of extrapolated flux:" << endl;
+    calcContinuityError(phie_);
+
+    // regular projection
+    if(! regOn_)
+    {
+        C_ = convOperator(phie_, Ue_);
+    }
+    else // RegularizationModel regularization
+    {
+        // Filter velocity and flux using polynomial Laplace filter
+        Uef_ = filter_(Ue_);
+        Uef_.correctBoundaryConditions();
+
+        surfaceScalarField phief_("phif", surfaceFieldFilter(phie_));
+
+        // This approach add a little more divergeence error,
+        // take more iterations to be divergence free > more time required
+        // // phief is derived from filtered-extrapolated velocity
+        // // instead of filtering. Hence making phief divergence-free is essential
+        // surfaceScalarField phief_("phif", fvc::flux(Uef_));
+
+        // Make filtered flux (and correcponding velocity) divergence free
+        if(extpFilterFieldDivFree_)
+        {
+            setDivergenceFree (phief_, Uef_);
+        }
+
+        if(runTime_.outputTime())
+        {
+            volVectorField Uprime("Uprime", (Ue_- Uef_));
+            Uprime.write();
+
+            Ue_.write();
+            Uef_.write();
+
+            volScalarField divPhif("divPhif", fvc::div(phief_));
+            divPhif.write();
+        }
+
+        // Fist term: (C(us_f) uc_f)
+        C_ = convOperator(phief_, Uef_);
+
+        // Second term: Filt(C(us_f) uc')
+        volVectorField Cint( "Cint", convOperator(phief_, (Ue_- Uef_)));
+        Cint.correctBoundaryConditions();
+        C_ += filter_(Cint);
+
+        // Third term: Filt(C(us') uc_f)
+        Cint = convOperator((phie_- phief_), Uef_);
+        Cint.correctBoundaryConditions();
+        C_ += filter_(Cint);
+
+        phief_.clear();
+    }
+
+    phie_.clear();
+}
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::RegularizationModel::RegularizationModel
+(
+    const volVectorField& U,
+    const surfaceScalarField& phi,
+    volScalarField& pp,
+    const label&  pRefCell,
+    const scalar& pRefValue,
+    const label nNonOrthCorr
+)
+:
+    // Set the pointer to runTime
+    runTime_(U.time()),
+
+    // Set the pointer to the mesh
+    mesh_(U.mesh()),
+
+    // Set the pointer to the velocity, flux and pressure-correction field
+    U_(U),
+    phi_(phi),
+    pp_(pp),
+
+    pRefCell_(pRefCell),
+    pRefValue_(pRefValue),
+
+    nNonOrthCorr_(nNonOrthCorr),
+
+    regOn_(true),
+
+    extpFilterFieldDivFree_(true),
+
+    Ue_
+    (
+        IOobject
+        (
+            "Ue",
+            U.instance(), //runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        //U_
+        mesh_,
+        dimensionedVector("", dimVelocity, vector::zero)
+    ),
+
+    Uef_
+    (
+        IOobject
+        (
+            "Uf",
+            Ue_.instance(), // runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        //U_
+        mesh_,
+        dimensionedVector("", dimVelocity, vector::zero)
+    ),
+
+    // Adam-Bashforth extrapolation coefficient
+    k_(0.5),
+
+    // get regularization sub dictionary from fvSolution
+    regDict_(mesh_.solutionDict().subDict("regularization")),
+
+    // get LES filter specified in the regularization dictionary
+    filterPtr_(LESfilter::New(mesh_, regDict_)),
+    filter_(filterPtr_()),
+
+    // Initialize the convection term field
+    C_
+    (
+        IOobject
+        (
+            "convectionTerm",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("C",dimAcceleration,vector::zero)
+    )
+
+{
+    Info << " Regularization dictionary: " << regDict_ << endl;
+
+    volVectorField UFilter("UFilter", filter_(U_));
+    UFilter.write();
+}
+
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+
+Foam::RegularizationModel::~RegularizationModel()
+{
+    Info << "RegularizationModel Destructor" << endl;
+}
+
+
+// ************************************************************************* //
