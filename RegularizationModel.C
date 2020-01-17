@@ -151,15 +151,31 @@ void Foam::RegularizationModel::update()
     else // RegularizationModel regularization
     {
         // Filter velocity and flux using polynomial Laplace filter
-        Uef_ = filter_(Ue_);
+        tmp<volVectorField> tUef_
+        (
+            new volVectorField
+            (
+                IOobject
+                (
+                    "Uf",
+                    Ue_.instance(), // runTime_.timeName(),
+                    mesh_,
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                filter_(Ue_)
+             )
+        );
+        volVectorField& Uef_ = tUef_.ref();
         Uef_.correctBoundaryConditions();
 
         surfaceScalarField phief_("phif", surfaceFieldFilter(phie_));
 
         // This approach add a little more divergeence error,
         // take more iterations to be divergence free > more time required
-        // // phief is derived from filtered-extrapolated velocity
-        // // instead of filtering. Hence making phief divergence-free is essential
+        //
+        // phief is derived from filtered-extrapolated velocity
+        // instead of filtering. Hence making phief divergence-free is essential
         // surfaceScalarField phief_("phif", fvc::flux(Uef_));
 
         // Make filtered flux (and correcponding velocity) divergence free
@@ -193,6 +209,7 @@ void Foam::RegularizationModel::update()
         Cint.correctBoundaryConditions();
         C_ += filter_(Cint);
 
+        tUef_.clear();
         phief_.clear();
     }
 
@@ -242,19 +259,6 @@ Foam::RegularizationModel::RegularizationModel
         (
             "Ue",
             U.instance(), //runTime_.timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimensionedVector("", dimVelocity, vector::zero)
-    ),
-    Uef_
-    (
-        IOobject
-        (
-            "Uf",
-            Ue_.instance(), // runTime_.timeName(),
             mesh_,
             IOobject::NO_READ,
             IOobject::NO_WRITE

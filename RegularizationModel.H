@@ -93,9 +93,6 @@ class RegularizationModel
         // extrapolated velocity field
         volVectorField Ue_;
 
-        // extrapolated filtered velocity field
-        volVectorField Uef_;
-
         // convection term
         volVectorField C_;
 
@@ -159,11 +156,6 @@ public:
         inline volVectorField Ue()
         {
             return Ue_;
-        }
-
-        inline volVectorField Uf()
-        {
-            return Uef_;
         }
 
         inline word getConvectionTermName()
