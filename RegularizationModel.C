@@ -320,8 +320,8 @@ volVectorField Foam::RegularizationModel::getConvectionTerm
 
 Foam::RegularizationModel::RegularizationModel
 (
-    const volVectorField& U,
-    const surfaceScalarField& phi,
+    // const volVectorField& U,
+    // const surfaceScalarField& phi,
     volScalarField& pp,
     const label&  pRefCell,
     const scalar& pRefValue,
@@ -329,8 +329,8 @@ Foam::RegularizationModel::RegularizationModel
 )
 :
     // Set the pointer to runTime
-    runTime_(U.time()),
-    mesh_(U.mesh()),
+    runTime_(pp.time()),
+    mesh_(pp.mesh()),
 
     regOn_(true),
     extpFilterFieldDivFree_(true),
@@ -344,8 +344,8 @@ Foam::RegularizationModel::RegularizationModel
     filter_(filterPtr_()),
 
     // Set the pointer to the velocity, flux and pressure-correction field
-    U_(U),
-    phi_(phi),
+    // U_(U),
+    // phi_(phi),
     pp_(pp),
 
     pRefCell_(pRefCell),

@@ -74,11 +74,11 @@ class RegularizationModel
 
 
     // Pointer to solver fields and scalars
-        //- Extrapolated velocity field pointer
-        const volVectorField& U_;
+        // //- Extrapolated velocity field pointer
+        // const volVectorField& U_;
 
-        // Extrapolated surface volume flux pointer
-        const surfaceScalarField& phi_;
+        // // Extrapolated surface volume flux pointer
+        // const surfaceScalarField& phi_;
 
         // pressure-correction field pp pointer
         volScalarField& pp_;
@@ -118,8 +118,8 @@ public:
     // Constructors
     RegularizationModel
     (
-        const volVectorField& U,
-        const surfaceScalarField& phi,
+        // const volVectorField& U,
+        // const surfaceScalarField& phi,
         volScalarField& pp,
         const label&  pRefCell,
         const scalar& pRefValue,
