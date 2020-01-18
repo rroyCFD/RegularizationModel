@@ -90,11 +90,11 @@ class RegularizationModel
         // number of non-orthogonal correctors
         const label nNonOrthCorr_;
 
-        // extrapolated velocity field
-        volVectorField Ue_;
+        // // extrapolated velocity field
+        // volVectorField Ue_;
 
-        // convection term
-        volVectorField C_;
+        // // convection term
+        // volVectorField C_;
 
     // Private member functions
         void setDivergenceFree(
@@ -144,24 +144,30 @@ public:
             extpFilterFieldDivFree_ = extpFilterFieldDivFree;
         }
 
-        //- Update Coriolis force
-        void update();
+        // //- Update Coriolis force
+        // void update();
 
-        // Return the convection term
-        volVectorField convectionTerm()
-        {
-            return C_;
-        }
+        // // Return the convection term
+        // volVectorField convectionTerm()
+        // {
+        //     return C_;
+        // }
 
-        inline volVectorField Ue()
-        {
-            return Ue_;
-        }
 
-        inline word getConvectionTermName()
-        {
-            return C_.name();
-        }
+        volVectorField getConvectionTerm(
+                                        const surfaceScalarField& phie_,
+                                        const volVectorField& Ue_
+                                        );
+
+        // inline volVectorField Ue()
+        // {
+        //     return Ue_;
+        // }
+
+        // inline word getConvectionTermName()
+        // {
+        //     return C_.name();
+        // }
 
         surfaceScalarField surfaceFieldFilter(const surfaceScalarField& ssf_);
 

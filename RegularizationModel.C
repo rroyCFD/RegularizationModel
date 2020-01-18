@@ -127,7 +127,7 @@ void Foam::RegularizationModel::setDivergenceFree
     return;
 }
 
-
+/*
 // compute and update the convection term
 void Foam::RegularizationModel::update()
 {
@@ -214,7 +214,107 @@ void Foam::RegularizationModel::update()
     }
 
     phie_.clear();
+}*/
+
+
+
+volVectorField Foam::RegularizationModel::getConvectionTerm
+(
+    const surfaceScalarField& phie_,
+    const volVectorField& Ue_
+)
+{
+    volVectorField convTerm_
+    (
+        IOobject
+        (
+            "convectionTerm",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("convTerm",dimAcceleration,vector::zero)
+    );
+
+    // regular projection
+    if(! regOn_)
+    {
+        convTerm_ = convOperator(phie_, Ue_);
+
+    }
+    else // C4 regularization
+    {
+        // Filter velocity and flux using polynomial Laplace filter
+        tmp<volVectorField> tUef_
+        (
+            new volVectorField
+            (
+                IOobject
+                (
+                    "Uf",
+                    Ue_.instance(), // runTime_.timeName(),
+                    mesh_,
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                filter_(Ue_)
+             )
+        );
+        volVectorField& Uef_ = tUef_.ref();
+        Uef_.correctBoundaryConditions();
+
+        surfaceScalarField phief_("phif", surfaceFieldFilter(phie_));
+
+        // This approach add a little more divergeence error,
+        // take more iterations to be divergence free > more time required
+        //
+        // phief is derived from filtered-extrapolated velocity
+        // instead of filtering. Hence making phief divergence-free is essential
+        // surfaceScalarField phief_("phif", fvc::flux(Uef_));
+
+        // Make filtered flux (and correcponding velocity) divergence free
+        if(extpFilterFieldDivFree_)
+        {
+            setDivergenceFree (phief_, Uef_);
+        }
+
+        // Fist term: (C(us_f) uc_f)
+        convTerm_ = convOperator(phief_, Uef_);
+
+        // Second term: Filt(C(us_f) uc')
+        volVectorField Cint( "Cint", convOperator(phief_, (Ue_- Uef_)));
+        Cint.correctBoundaryConditions();
+        convTerm_ += filter_(Cint);
+
+        // Third term: Filt(C(us') uc_f)
+        Cint = convOperator((phie_- phief_), Uef_);
+        Cint.correctBoundaryConditions();
+        convTerm_ += filter_(Cint);
+
+
+        if(runTime_.outputTime())
+        {
+            // convTerm_.write();
+
+            Ue_.write();
+            Uef_.write();
+
+            volVectorField Uprime("Uprime", (Ue_- Uef_));
+            Uprime.write();
+
+            volScalarField divPhif("divPhif", fvc::div(phief_));
+            divPhif.write();
+        }
+
+        tUef_.clear();
+        phief_.clear();
+    }
+
+    return convTerm_;
 }
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -251,8 +351,8 @@ Foam::RegularizationModel::RegularizationModel
     pRefCell_(pRefCell),
     pRefValue_(pRefValue),
 
-    nNonOrthCorr_(nNonOrthCorr),
-
+    nNonOrthCorr_(nNonOrthCorr) //,
+/*
     Ue_
     (
         IOobject
@@ -280,12 +380,12 @@ Foam::RegularizationModel::RegularizationModel
         mesh_,
         dimensionedVector("C",dimAcceleration,vector::zero)
     )
-
+*/
 {
     Info << " Regularization dictionary: " << regDict_ << endl;
 
-    volVectorField UFilter("UFilter", filter_(U_));
-    UFilter.write();
+    // volVectorField UFilter("UFilter", filter_(U_));
+    // UFilter.write();
 }
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
