@@ -127,96 +127,6 @@ void Foam::RegularizationModel::setDivergenceFree
     return;
 }
 
-/*
-// compute and update the convection term
-void Foam::RegularizationModel::update()
-{
-    // Extrapolate fields to n+1 time-step
-    Ue_= ((1+k_)*U_.oldTime() - k_*U_.oldTime().oldTime());
-    Ue_.correctBoundaryConditions();
-
-    surfaceScalarField phie_
-    (
-        "phie",
-        ((1+k_)*phi_.oldTime() - k_*phi_.oldTime().oldTime())
-    );
-    Info << "Continuity error of extrapolated flux:" << endl;
-    calcContinuityError(phie_);
-
-    // regular projection
-    if(! regOn_)
-    {
-        C_ = convOperator(phie_, Ue_);
-    }
-    else // RegularizationModel regularization
-    {
-        // Filter velocity and flux using polynomial Laplace filter
-        tmp<volVectorField> tUef_
-        (
-            new volVectorField
-            (
-                IOobject
-                (
-                    "Uf",
-                    Ue_.instance(), // runTime_.timeName(),
-                    mesh_,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                filter_(Ue_)
-             )
-        );
-        volVectorField& Uef_ = tUef_.ref();
-        Uef_.correctBoundaryConditions();
-
-        surfaceScalarField phief_("phif", surfaceFieldFilter(phie_));
-
-        // This approach add a little more divergeence error,
-        // take more iterations to be divergence free > more time required
-        //
-        // phief is derived from filtered-extrapolated velocity
-        // instead of filtering. Hence making phief divergence-free is essential
-        // surfaceScalarField phief_("phif", fvc::flux(Uef_));
-
-        // Make filtered flux (and correcponding velocity) divergence free
-        if(extpFilterFieldDivFree_)
-        {
-            setDivergenceFree (phief_, Uef_);
-        }
-
-        if(runTime_.outputTime())
-        {
-            volVectorField Uprime("Uprime", (Ue_- Uef_));
-            Uprime.write();
-
-            Ue_.write();
-            Uef_.write();
-
-            volScalarField divPhif("divPhif", fvc::div(phief_));
-            divPhif.write();
-        }
-
-        // Fist term: (C(us_f) uc_f)
-        C_ = convOperator(phief_, Uef_);
-
-        // Second term: Filt(C(us_f) uc')
-        volVectorField Cint( "Cint", convOperator(phief_, (Ue_- Uef_)));
-        Cint.correctBoundaryConditions();
-        C_ += filter_(Cint);
-
-        // Third term: Filt(C(us') uc_f)
-        Cint = convOperator((phie_- phief_), Uef_);
-        Cint.correctBoundaryConditions();
-        C_ += filter_(Cint);
-
-        tUef_.clear();
-        phief_.clear();
-    }
-
-    phie_.clear();
-}*/
-
-
 
 volVectorField Foam::RegularizationModel::getConvectionTerm
 (
@@ -320,8 +230,6 @@ volVectorField Foam::RegularizationModel::getConvectionTerm
 
 Foam::RegularizationModel::RegularizationModel
 (
-    // const volVectorField& U,
-    // const surfaceScalarField& phi,
     volScalarField& pp,
     const label&  pRefCell,
     const scalar& pRefValue,
@@ -343,49 +251,15 @@ Foam::RegularizationModel::RegularizationModel
     filterPtr_(LESfilter::New(mesh_, regDict_)),
     filter_(filterPtr_()),
 
-    // Set the pointer to the velocity, flux and pressure-correction field
-    // U_(U),
-    // phi_(phi),
     pp_(pp),
 
     pRefCell_(pRefCell),
     pRefValue_(pRefValue),
 
-    nNonOrthCorr_(nNonOrthCorr) //,
-/*
-    Ue_
-    (
-        IOobject
-        (
-            "Ue",
-            U.instance(), //runTime_.timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimensionedVector("", dimVelocity, vector::zero)
-    ),
-    // Initialize the convection term field
-    C_
-    (
-        IOobject
-        (
-            "convectionTerm",
-            runTime_.timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimensionedVector("C",dimAcceleration,vector::zero)
-    )
-*/
+    nNonOrthCorr_(nNonOrthCorr)
 {
-    Info << " Regularization dictionary: " << regDict_ << endl;
+    Info << "Regularization dictionary: " << regDict_ << endl;
 
-    // volVectorField UFilter("UFilter", filter_(U_));
-    // UFilter.write();
 }
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //

@@ -74,12 +74,6 @@ class RegularizationModel
 
 
     // Pointer to solver fields and scalars
-        // //- Extrapolated velocity field pointer
-        // const volVectorField& U_;
-
-        // // Extrapolated surface volume flux pointer
-        // const surfaceScalarField& phi_;
-
         // pressure-correction field pp pointer
         volScalarField& pp_;
 
@@ -89,12 +83,6 @@ class RegularizationModel
 
         // number of non-orthogonal correctors
         const label nNonOrthCorr_;
-
-        // // extrapolated velocity field
-        // volVectorField Ue_;
-
-        // // convection term
-        // volVectorField C_;
 
     // Private member functions
         void setDivergenceFree(
@@ -118,8 +106,6 @@ public:
     // Constructors
     RegularizationModel
     (
-        // const volVectorField& U,
-        // const surfaceScalarField& phi,
         volScalarField& pp,
         const label&  pRefCell,
         const scalar& pRefValue,
@@ -144,30 +130,10 @@ public:
             extpFilterFieldDivFree_ = extpFilterFieldDivFree;
         }
 
-        // //- Update Coriolis force
-        // void update();
-
-        // // Return the convection term
-        // volVectorField convectionTerm()
-        // {
-        //     return C_;
-        // }
-
-
         volVectorField getConvectionTerm(
                                         const surfaceScalarField& phie_,
                                         const volVectorField& Ue_
                                         );
-
-        // inline volVectorField Ue()
-        // {
-        //     return Ue_;
-        // }
-
-        // inline word getConvectionTermName()
-        // {
-        //     return C_.name();
-        // }
 
         surfaceScalarField surfaceFieldFilter(const surfaceScalarField& ssf_);
 
