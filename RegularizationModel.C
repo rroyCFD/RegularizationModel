@@ -190,18 +190,53 @@ volVectorField Foam::RegularizationModel::getConvectionTerm
             setDivergenceFree (phief_, Uef_);
         }
 
-        // Fist term: (C(us_f) uc_f)
-        convTerm_ = convOperator(phief_, Uef_);
+        if(regOrder_ == "C4" || regOrder_ == "c4")
+        {
+            // Fist term: (C(us_f) uc_f)
+            convTerm_ = convOperator(phief_, Uef_);
 
-        // Second term: Filt(C(us_f) uc')
-        volVectorField Cint( "Cint", convOperator(phief_, (Ue_- Uef_)));
-        Cint.correctBoundaryConditions();
-        convTerm_ += filter_(Cint);
+            // Second term: Filt(C(us_f) uc')
+            volVectorField Cint( "Cint", convOperator(phief_, (Ue_- Uef_)));
+            Cint.correctBoundaryConditions();
+            convTerm_ += filter_(Cint);
 
-        // Third term: Filt(C(us') uc_f)
-        Cint = convOperator((phie_- phief_), Uef_);
-        Cint.correctBoundaryConditions();
-        convTerm_ += filter_(Cint);
+            // Third term: Filt(C(us') uc_f)
+            Cint = convOperator((phie_- phief_), Uef_);
+            Cint.correctBoundaryConditions();
+            convTerm_ += filter_(Cint);
+        }
+        else if (regOrder_ == "C2"|| regOrder_ == "c2")
+        {
+            // Filter(C(us_f) uc_f)
+            convTerm_ = filter_(convOperator(phief_, Uef_));
+        }
+        else if(regOrder_ == "C6"|| regOrder_ == "c6")
+        {
+            // Fist term: (C(us_f) uc_f)
+            convTerm_ = convOperator(phief_, Uef_);
+
+            // Second term: (C(us_f) uc')
+            volVectorField Uprime("Uprime", (Ue_- Uef_));
+            convTerm_ += convOperator(phief_, Uprime);
+
+            // Third term: C(us', uc_f)
+            surfaceScalarField phiPrime("phiPrime", (phie_- phief_));
+            convTerm_ += convOperator(phiPrime, Uef_);
+
+            // Fourth term: Filt(C(us', uc'))
+            // volVectorField Cint = convOperator(phiPrime, Uprime);
+            // Cint.correctBoundaryConditions();
+            // convTerm_ += filter_(Cint);
+
+            convTerm_ += filter_(convOperator(phiPrime, Uprime));
+        }
+        else
+        {
+            FatalErrorIn("Regularization order") << regOrder_
+                << " is not recognized!\n"
+                << " Avaialble orders are C2, C4 or C6." << abort(FatalError);
+        }
+
 
 
         if(runTime_.outputTime())
@@ -246,6 +281,9 @@ Foam::RegularizationModel::RegularizationModel
 
     // get regularization sub dictionary from fvSolution
     regDict_(mesh_.solutionDict().subDict("regularization")),
+
+    // get regularization order; if available
+    regOrder_(regDict_.lookupOrDefault<word>("regOrder", "C4")),
 
     // get LES filter specified in the regularization dictionary
     filterPtr_(LESfilter::New(mesh_, regDict_)),

@@ -68,6 +68,9 @@ class RegularizationModel
         // regularization dict: contaning regularization and filter types
         const dictionary regDict_;
 
+        // regularization order specifier; default C4
+        word regOrder_;
+
         // LES filter for U and phi
         autoPtr<LESfilter> filterPtr_;
         LESfilter& filter_;
