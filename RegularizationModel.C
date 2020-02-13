@@ -230,11 +230,17 @@ volVectorField Foam::RegularizationModel::getConvectionTerm
 
             convTerm_ += filter_(convOperator(phiPrime, Uprime));
         }
+        // Explicit regularization proposed by Bose et al.
+        else if (regOrder_ == "Explicit"|| regOrder_ == "explicit")
+        {
+            convTerm_ = filter_(convOperator(phie_, Ue_));
+        }
         else
         {
             FatalErrorIn("Regularization order") << regOrder_
                 << " is not recognized!\n"
-                << " Avaialble orders are C2, C4 or C6." << abort(FatalError);
+                << " Avaialble orders are C2, C4 C6, or Explicit"
+                << abort(FatalError);
         }
 
 
