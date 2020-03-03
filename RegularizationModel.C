@@ -266,6 +266,9 @@ volVectorField Foam::RegularizationModel::getConvectionTerm
     return convTerm_;
 }
 
+// add residual function header
+#include "residual.H"
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -295,6 +298,10 @@ Foam::RegularizationModel::RegularizationModel
     filterPtr_(LESfilter::New(mesh_, regDict_)),
     filter_(filterPtr_()),
 
+    residualDict_(mesh_.solutionDict().subDict("regResidual")),
+    resPtr_(LESfilter::New(mesh_, residualDict_)),
+    residual_(resPtr_()),
+
     pp_(pp),
 
     pRefCell_(pRefCell),
@@ -303,7 +310,7 @@ Foam::RegularizationModel::RegularizationModel
     nNonOrthCorr_(nNonOrthCorr)
 {
     Info << "Regularization dictionary: " << regDict_ << endl;
-
+    Info << "Regularization residual dictionary: " << residualDict_ << endl;
 }
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //

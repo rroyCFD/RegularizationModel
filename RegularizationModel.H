@@ -75,6 +75,10 @@ class RegularizationModel
         autoPtr<LESfilter> filterPtr_;
         LESfilter& filter_;
 
+        const dictionary residualDict_;
+        autoPtr<LESfilter> resPtr_;
+        LESfilter& residual_;
+
 
     // Pointer to solver fields and scalars
         // pressure-correction field pp pointer
@@ -139,6 +143,12 @@ public:
                                         );
 
         surfaceScalarField surfaceFieldFilter(const surfaceScalarField& ssf_);
+
+        volVectorField convectionResidual(
+                                        const surfaceScalarField& phie_,
+                                        const volVectorField& Ue_
+                                        );
+        surfaceScalarField surfaceFieldResidual(const surfaceScalarField& ssf_);
 
 };
 
