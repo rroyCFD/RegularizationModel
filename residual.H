@@ -14,20 +14,29 @@ volVectorField Foam::RegularizationModel::convectionResidual
     const volVectorField& Ue_
 )
 {
-    volVectorField convRes_
+    tmp<volVectorField> tConvRes_
     (
-        IOobject
+        new volVectorField
         (
-            "convRes",
-            runTime_.timeName(),
+            IOobject
+            (
+                "convRes",
+                Ue_.instance(), // runTime_.timeName(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
             mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimensionedVector("convRes",dimAcceleration,vector::zero)
-        // residual_(fvc::div(phiRes_, URes_, "div(phi,U)"))
+            dimensionedVector("",dimAcceleration,vector::zero)
+            // residual_(
+            //     fvc::div(
+            //         surfaceFieldResidual(phie_), residual_(Ue_),
+            //         "div(phiRes,URes)"
+            //     )
+            // )
+        )
     );
+    volVectorField& convRes_ = tConvRes_.ref();
 
     if(regOn_)
     {
@@ -55,7 +64,7 @@ volVectorField Foam::RegularizationModel::convectionResidual
 
         if(residualOrder_ == "C6"|| residualOrder_ == "c6")
         {
-            convRes_ = residual_(fvc::div(phiRes_, URes_, "div(phi,U)"));
+            convRes_ = residual_(fvc::div(phiRes_, URes_, "div(phiRes,URes)"));
         }
         else
         {
