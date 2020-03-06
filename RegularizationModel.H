@@ -76,6 +76,7 @@ class RegularizationModel
         LESfilter& filter_;
 
         const dictionary residualDict_;
+        word residualOrder_;
         autoPtr<LESfilter> resPtr_;
         LESfilter& residual_;
 

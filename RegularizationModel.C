@@ -299,6 +299,7 @@ Foam::RegularizationModel::RegularizationModel
     filter_(filterPtr_()),
 
     residualDict_(mesh_.solutionDict().subDict("regResidual")),
+    residualOrder_(residualDict_.lookupOrDefault<word>("residualOrder", "C6")),
     resPtr_(LESfilter::New(mesh_, residualDict_)),
     residual_(resPtr_()),
 

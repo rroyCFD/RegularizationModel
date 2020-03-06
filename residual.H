@@ -53,13 +53,13 @@ volVectorField Foam::RegularizationModel::convectionResidual
         surfaceScalarField phiRes_("phiRes", surfaceFieldResidual(phie_));
 
 
-        if(regOrder_ == "C6"|| regOrder_ == "c6")
+        if(residualOrder_ == "C6"|| residualOrder_ == "c6")
         {
             convRes_ = residual_(fvc::div(phiRes_, URes_, "div(phi,U)"));
         }
         else
         {
-            FatalErrorIn("Regularization order") << regOrder_
+            FatalErrorIn("Regularization order") << residualOrder_
                 << " is not recognized!\n" << " Avaialble orders is C6"
                 << abort(FatalError);
         }
