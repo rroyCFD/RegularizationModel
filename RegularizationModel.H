@@ -103,7 +103,7 @@ class RegularizationModel
             const volVectorField& vvf_
         );
 
-        void calcContinuityError (surfaceScalarField& ssf_);
+        // void calcContinuityError (surfaceScalarField& ssf_);
 
 public:
 
@@ -133,6 +133,8 @@ public:
             regOn_ = regOn;
         }
 
+        void calcContinuityError (surfaceScalarField& ssf_);
+
         void setFilterFieldsDivFree(bool extpFilterFieldDivFree)
         {
             extpFilterFieldDivFree_ = extpFilterFieldDivFree;
@@ -150,6 +152,17 @@ public:
                                         const volVectorField& Ue_
                                         );
         surfaceScalarField surfaceFieldResidual(const surfaceScalarField& ssf_);
+
+
+        volVectorField SGSfilter(volVectorField& vvf)
+        {
+            return filter_(vvf);
+        }
+
+        volVectorField SGSresidual(volVectorField& vvf)
+        {
+            return residual_(vvf);
+        }
 
 };
 

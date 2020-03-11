@@ -284,8 +284,8 @@ Foam::RegularizationModel::RegularizationModel
     runTime_(pp.time()),
     mesh_(pp.mesh()),
 
-    regOn_(true),
-    extpFilterFieldDivFree_(true),
+    regOn_(false),
+    extpFilterFieldDivFree_(false),
     k_(0.5),
 
     // get regularization sub dictionary from fvSolution
