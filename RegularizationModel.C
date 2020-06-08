@@ -63,7 +63,8 @@ inline volVectorField Foam::RegularizationModel::convOperator
 }
 
 
-void Foam::RegularizationModel::calcContinuityError (surfaceScalarField& ssf_)
+void Foam::RegularizationModel::calcContinuityError (
+    const surfaceScalarField& ssf_)
 {
     volScalarField contErr(fvc::div(ssf_));
 
@@ -79,14 +80,16 @@ void Foam::RegularizationModel::calcContinuityError (surfaceScalarField& ssf_)
         << ", global = " << globalContErr << endl;
 }
 
-// solve a poison pressure equation to make filtered flux divergence free
-void Foam::RegularizationModel::setDivergenceFree
-(
-    surfaceScalarField& ssf_,
-    volVectorField& vvf_
-)
+void Foam::RegularizationModel::calcContinuityError (const volVectorField& vvf_)
 {
-    Info << "continuity error before correction" << endl;
+    surfaceScalarField ssf_ = fvc::flux(vvf_);
+    calcContinuityError(ssf_);
+}
+
+// solve a poison pressure equation to make filtered flux divergence free
+void Foam::RegularizationModel::setDivergenceFree (surfaceScalarField& ssf_)
+{
+    Info << "flux continuity error before correction" << endl;
     calcContinuityError(ssf_);
 
     dimensionedScalar dt = runTime_.deltaT();
@@ -116,12 +119,31 @@ void Foam::RegularizationModel::setDivergenceFree
         }
     }
 
-    Info << "continuity error after correction" << endl;
+    Info << "flux continuity error after correction" << endl;
     calcContinuityError(ssf_);
+    Info << endl;
 
+    return;
+}
+
+// solve a poison pressure equation to make filtered flux divergence free
+void Foam::RegularizationModel::setDivergenceFree
+(
+    surfaceScalarField& ssf_,
+    volVectorField& vvf_
+)
+{
+    setDivergenceFree(ssf_);
+
+    Info << "velocity continuity error before correction" << endl;
+    calcContinuityError(vvf_);
+
+    dimensionedScalar dt = runTime_.deltaT();
     vvf_ -= (fvc::grad(pp_, "grad(p)") * (dt/(k_+ 0.5)) );
     vvf_.correctBoundaryConditions();
 
+    Info << "velocity continuity error after correction" << endl;
+    calcContinuityError(vvf_);
     Info << endl;
 
     return;

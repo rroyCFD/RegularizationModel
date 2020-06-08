@@ -133,7 +133,8 @@ public:
             regOn_ = regOn;
         }
 
-        void calcContinuityError (surfaceScalarField& ssf_);
+        void calcContinuityError (const surfaceScalarField& ssf_);
+        void calcContinuityError (const volVectorField& vvf_);
 
         void setFilterFieldsDivFree(bool extpFilterFieldDivFree)
         {
