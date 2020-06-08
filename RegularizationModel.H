@@ -93,6 +93,8 @@ class RegularizationModel
         const label nNonOrthCorr_;
 
     // Private member functions
+        void setDivergenceFree(surfaceScalarField& ssf_ );
+
         void setDivergenceFree(
             surfaceScalarField& ssf_,
             volVectorField& vvf_
