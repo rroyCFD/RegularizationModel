@@ -176,7 +176,11 @@ volVectorField Foam::RegularizationModel::getConvectionTerm
         convTerm_ = convOperator(phie_, Ue_);
 
     }
-    else // C4 regularization
+    else if(regOn_ && (residualOrder_ == "A6"|| residualOrder_ == "a6"))
+    {
+        convTerm_ = convOperator(phie_, Ue_) - convectionResidual(phie_, Ue_);
+    }
+    else // perform Verstappen regularization
     {
         // Filter velocity and flux using polynomial Laplace filter
         tmp<volVectorField> tUef_
@@ -261,7 +265,7 @@ volVectorField Foam::RegularizationModel::getConvectionTerm
         {
             FatalErrorIn("Regularization order") << regOrder_
                 << " is not recognized!\n"
-                << " Avaialble orders are C2, C4 C6, or Explicit"
+                << " Avaialble orders are C2, C4 C6, A6 or Explicit"
                 << abort(FatalError);
         }
 

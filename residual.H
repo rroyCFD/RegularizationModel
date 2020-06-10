@@ -61,7 +61,7 @@ volVectorField Foam::RegularizationModel::convectionResidual
 
         surfaceScalarField phiRes_("phiRes", surfaceFieldResidual(phie_));
 
-        if(residualOrder_ == "C6"|| residualOrder_ == "c6")
+        if(residualOrder_ == "A6"|| residualOrder_ == "a6")
         {
             // Make filtered flux  divergence free;
             // velocity div. error is already high, correction not required
@@ -83,7 +83,7 @@ volVectorField Foam::RegularizationModel::convectionResidual
         else
         {
             FatalErrorIn("Regularization order") << residualOrder_
-                << " is not recognized!\n" << " Avaialble orders is C6"
+                << " is not recognized!\n" << " Avaialble orders is A6"
                 << abort(FatalError);
         }
 
