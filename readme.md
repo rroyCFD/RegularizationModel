@@ -9,26 +9,34 @@
 the non-linear convection term is explicitly estimated. THe velocity (U) and mass-flux (phi) are filtered using a LES type filter specified in the __regularization__ sub-dictionary in the system/fvSolution case file. In this class, the regularization is 4th order accurate; implemented as:
 
     Uf = filter(U);     UPrime = (U - Uf)
-    phif = filter(phi); phiPrime = (phi - phif)
-    C(phi, U) = fvc::div(phi, U)
+    phif       = filter(phi); phiPrime = (phi - phif)
+    C(phi, U)  = fvc::div(phi, U)
+    C2(phi, U) = filter(C(phif, Uf))
     C4(phi, U) = C(phif, Uf) + filter(C(phif, UPrime)) + filter(C(phiPrime, Uf))
+    C6(phi, U) = C(phif, Uf) + C(phif, UPrime))+ C(phiPrime, Uf) + filter(C(phiPrime, UPrime))
 
-Sample filter description:
+    A6(phi, U) =  C(phi, U) - residual(C(phiPrime, UPrime))
 
-    regularization
-    {
-        filter    simple;
-    }
-
+Sample regularization dictionary in fvSolution file:
 
     regularization
     {
+        // Verstappen regularization
+        regOrder  C6; // C4; // C2;
         filter    polyLaplace;
+
+        // A6: compact formulation of C6
+        regOrder  A6;
+        filter    polyLaplaceResidual;
+
+        // epsilon 2
         d1        0.16666667;
         d2        0.00416667;
-    }
 
-Filters of the 2nd and 6th order would be added in the future release, if needed. More about the regularization filters are available in 
+        // epsilon 3
+        d1        0.375;
+        d2        0.0375;
+    }
 
     Verstappen, R. (2008).
     On restraining the production of small scales of motion in a turbulent channel flow.

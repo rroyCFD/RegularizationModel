@@ -1,7 +1,7 @@
 surfaceScalarField Foam::RegularizationModel::surfaceFieldResidual
 (const surfaceScalarField& ssf_)
 {
-    volVectorField vvf_(ssf_.name(), fvc::reconstruct(ssf_));
+    volVectorField vvf_(ssf_.name()+"_Res", fvc::reconstruct(ssf_));
     vvf_ = residual_(vvf_);
 
     return(fvc::flux(vvf_));

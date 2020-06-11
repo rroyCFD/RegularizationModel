@@ -38,7 +38,7 @@ namespace Foam
 surfaceScalarField Foam::RegularizationModel::surfaceFieldFilter
 (const surfaceScalarField& ssf_)
 {
-    volVectorField vvf_(ssf_.name(), fvc::reconstruct(ssf_));
+    volVectorField vvf_(ssf_.name()+"_Res", fvc::reconstruct(ssf_));
     vvf_ = filter_(vvf_);
 
     return(fvc::flux(vvf_));
@@ -51,8 +51,8 @@ inline volVectorField Foam::RegularizationModel::convOperator
     const volVectorField& vvf_
 )
 {
-    // cross product of the convection operation
-    // without regularization the phi is usually div. free
+    // Cross product of the convection operation
+    // In absence of regularization, the phi is usually divergence free
     if(extpFilterFieldDivFree_ || !regOn_)
     {
        return (fvc::div(ssf_, vvf_, "div(phi,U)"));
