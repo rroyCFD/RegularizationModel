@@ -61,22 +61,17 @@ volVectorField Foam::RegularizationModel::convectionResidual
 
         surfaceScalarField phiRes_("phiRes", surfaceFieldResidual(phie_));
 
-        // Make filtered flux  divergence free;
-        // velocity div. error is already high, correction not required
+        // Make filtered flux  divergence free for KE conservation
+        // - Recommended for inviscid and laminar flow
+        // - For LES of hig Re (high total viscosity, it may be ignored!)
+        // - if not made divFree; U*div(phi) correction provides tiny improvment
+        // Velocity div error is not affected by the regularization filter
         if(extpFilterFieldDivFree_)
         {
             setDivergenceFree (phiRes_);
-            convRes_ = residual_(fvc::div(phiRes_, URes_, "div(phi,U)"));
         }
-        else
-        {
-            convRes_ = residual_(
-                fvc::div(phiRes_, URes_, "div(phi,U)")
-                // phiRes correction make small improvement, 
-                // but no-where close to conservation wo divFree corection
-                - URes_*fvc::div(phiRes_)
-            );
-        }
+
+        convRes_ = residual_(convOperator(phiRes_, URes_));
 
         tURes_.clear();
         phiRes_.clear();
