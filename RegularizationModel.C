@@ -53,7 +53,7 @@ inline volVectorField Foam::RegularizationModel::convOperator
 {
     // Cross product of the convection operation
     // In absence of regularization, the phi is usually divergence free
-    if(extpFilterFieldDivFree_ || !regOn_)
+    if(filteredFluxDivFree_ || !regOn_)
     {
        return (fvc::div(ssf_, vvf_, "div(phi,U)"));
     }
@@ -212,7 +212,7 @@ volVectorField Foam::RegularizationModel::getConvectionTerm
         // surfaceScalarField phief_("phif", fvc::flux(Uef_));
 
         // Make filtered flux (and correcponding velocity) divergence free
-        if(extpFilterFieldDivFree_)
+        if(filteredFluxDivFree_)
         {
             setDivergenceFree (phief_, Uef_);
         }
@@ -310,14 +310,16 @@ Foam::RegularizationModel::RegularizationModel
     mesh_(pp.mesh()),
 
     regOn_(false),
-    extpFilterFieldDivFree_(false),
     k_(0.5),
 
     // get regularization sub dictionary from fvSolution
     regDict_(mesh_.solutionDict().subDict("regularization")),
 
+    filteredFluxDivFree_(regDict_.lookupOrDefault<bool>
+        ("filteredFluxDivFree",false)),
+
     // get regularization order; if available
-    regOrder_(regDict_.lookupOrDefault<word>("regOrder", "A6")),
+    regOrder_(regDict_.lookupOrDefault<word>("regOrder", "None")),
 
     // get LES filter specified in the regularization dictionary
     filterPtr_(LESfilter::New(mesh_, regDict_)),

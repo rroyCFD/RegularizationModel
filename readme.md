@@ -19,8 +19,15 @@ the non-linear convection term is explicitly estimated. THe velocity (U) and mas
 
 Sample regularization dictionary in fvSolution file:
 
+    SOLVER // SPAeCE, PISO, etc.
+    {
+        regularizationOn     true; // false;
+    }
+
     regularization
     {
+        filteredFluxDivFree  false; // true;
+
         // Verstappen regularization
         regOrder  C6; // C4; // C2;
         filter    polyLaplace;

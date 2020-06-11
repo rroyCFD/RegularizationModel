@@ -59,14 +59,14 @@ class RegularizationModel
          // regularization On or projection?
         bool regOn_;
 
-        // make extrapolated fields divergence free?
-        bool extpFilterFieldDivFree_;
-
         // Adam-bashforth extrapolation coefficient
         scalar k_;
 
         // regularization dict: contaning regularization and filter types
         const dictionary regDict_;
+
+        // make fltered flux field divergence free?
+        bool filteredFluxDivFree_;
 
         // regularization order specifier; default C4
         word regOrder_;
@@ -138,10 +138,10 @@ public:
         void calcContinuityError (const surfaceScalarField& ssf_);
         void calcContinuityError (const volVectorField& vvf_);
 
-        void setFilterFieldsDivFree(bool extpFilterFieldDivFree)
-        {
-            extpFilterFieldDivFree_ = extpFilterFieldDivFree;
-        }
+        // void setFilteredFluxDivFree(bool filteredFluxDivFree)
+        // {
+        //     filteredFluxDivFree_ = filteredFluxDivFree;
+        // }
 
         volVectorField getConvectionTerm(
                                         const surfaceScalarField& phie_,

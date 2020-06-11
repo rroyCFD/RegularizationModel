@@ -66,7 +66,7 @@ volVectorField Foam::RegularizationModel::convectionResidual
         // - For LES of hig Re (high total viscosity, it may be ignored!)
         // - if not made divFree; U*div(phi) correction provides tiny improvment
         // Velocity div error is not affected by the regularization filter
-        if(extpFilterFieldDivFree_)
+        if(filteredFluxDivFree_)
         {
             setDivergenceFree (phiRes_);
         }
