@@ -75,9 +75,9 @@ class RegularizationModel
         autoPtr<LESfilter> filterPtr_;
         LESfilter& filter_;
 
-        const dictionary residualDict_;
+        // const dictionary residualDict_;
         word residualOrder_;
-        autoPtr<LESfilter> resPtr_;
+        // autoPtr<LESfilter> resPtr_;
         LESfilter& residual_;
 
 
@@ -154,19 +154,18 @@ public:
                                         const surfaceScalarField& phie_,
                                         const volVectorField& Ue_
                                         );
+
         surfaceScalarField surfaceFieldResidual(const surfaceScalarField& ssf_);
 
+        // volVectorField SGSfilter(volVectorField& vvf)
+        // {
+        //     return filter_(vvf);
+        // }
 
-        volVectorField SGSfilter(volVectorField& vvf)
-        {
-            return filter_(vvf);
-        }
-
-        volVectorField SGSresidual(volVectorField& vvf)
-        {
-            return residual_(vvf);
-        }
-
+        // volVectorField SGSresidual(volVectorField& vvf)
+        // {
+        //     return residual_(vvf);
+        // }
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

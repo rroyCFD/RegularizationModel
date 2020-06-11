@@ -156,6 +156,12 @@ volVectorField Foam::RegularizationModel::getConvectionTerm
     const volVectorField& Ue_
 )
 {
+    if(! regOn_)
+    {
+        return convOperator(phie_, Ue_);
+    }        
+
+    // Regularized convection term
     volVectorField convTerm_
     (
         IOobject
@@ -170,13 +176,7 @@ volVectorField Foam::RegularizationModel::getConvectionTerm
         dimensionedVector("convTerm",dimAcceleration,vector::zero)
     );
 
-    // regular projection
-    if(! regOn_)
-    {
-        convTerm_ = convOperator(phie_, Ue_);
-
-    }
-    else if(regOn_ && (residualOrder_ == "A6"|| residualOrder_ == "a6"))
+    if(regOrder_ == "A6"|| regOrder_ == "a6") // perform A6 regularization
     {
         convTerm_ = convOperator(phie_, Ue_) - convectionResidual(phie_, Ue_);
     }
@@ -269,8 +269,6 @@ volVectorField Foam::RegularizationModel::getConvectionTerm
                 << abort(FatalError);
         }
 
-
-
         if(runTime_.outputTime())
         {
             // convTerm_.write();
@@ -318,16 +316,19 @@ Foam::RegularizationModel::RegularizationModel
     regDict_(mesh_.solutionDict().subDict("regularization")),
 
     // get regularization order; if available
-    regOrder_(regDict_.lookupOrDefault<word>("regOrder", "C4")),
+    regOrder_(regDict_.lookupOrDefault<word>("regOrder", "A6")),
 
     // get LES filter specified in the regularization dictionary
     filterPtr_(LESfilter::New(mesh_, regDict_)),
     filter_(filterPtr_()),
 
-    residualDict_(mesh_.solutionDict().subDict("regResidual")),
-    residualOrder_(residualDict_.lookupOrDefault<word>("residualOrder", "C6")),
-    resPtr_(LESfilter::New(mesh_, residualDict_)),
-    residual_(resPtr_()),
+    // residualDict_(mesh_.solutionDict().subDict("regResidual")),
+    // residualOrder_(residualDict_.lookupOrDefault<word>("residualOrder", "A6")),
+    // resPtr_(LESfilter::New(mesh_, residualDict_)),
+    // residual_(resPtr_()),
+    
+    residualOrder_(regOrder_), // copy of regOrder
+    residual_(filterPtr_()), // copy of the filter_
 
     pp_(pp),
 
@@ -337,7 +338,7 @@ Foam::RegularizationModel::RegularizationModel
     nNonOrthCorr_(nNonOrthCorr)
 {
     Info << "Regularization dictionary: " << regDict_ << endl;
-    Info << "Regularization residual dictionary: " << residualDict_ << endl;
+    // Info << "Regularization residual dictionary: " << residualDict_ << endl;
 }
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //

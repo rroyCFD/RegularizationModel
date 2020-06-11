@@ -37,8 +37,8 @@ volVectorField Foam::RegularizationModel::convectionResidual
         )
     );
     volVectorField& convRes_ = tConvRes_.ref();
-
-    if(regOn_)
+        
+    if(residualOrder_ == "A6"|| residualOrder_ == "a6")
     {
         // Resisual velocity and flux using polynomial Laplace filter
         tmp<volVectorField> tURes_
@@ -61,34 +61,31 @@ volVectorField Foam::RegularizationModel::convectionResidual
 
         surfaceScalarField phiRes_("phiRes", surfaceFieldResidual(phie_));
 
-        if(residualOrder_ == "A6"|| residualOrder_ == "a6")
+        // Make filtered flux  divergence free;
+        // velocity div. error is already high, correction not required
+        if(extpFilterFieldDivFree_)
         {
-            // Make filtered flux  divergence free;
-            // velocity div. error is already high, correction not required
-            if(extpFilterFieldDivFree_)
-            {
-                setDivergenceFree (phiRes_);
-                convRes_ = residual_(fvc::div(phiRes_, URes_, "div(phi,U)"));
-            }
-            else
-            {
-                convRes_ = residual_(
-                    fvc::div(phiRes_, URes_, "div(phi,U)")
-                    // phiRes correction make small improvement, 
-                    // but no-where close to conservation wo divFree corection
-                    - URes_*fvc::div(phiRes_)
-                );
-            }
+            setDivergenceFree (phiRes_);
+            convRes_ = residual_(fvc::div(phiRes_, URes_, "div(phi,U)"));
         }
         else
         {
-            FatalErrorIn("Regularization order") << residualOrder_
-                << " is not recognized!\n" << " Avaialble orders is A6"
-                << abort(FatalError);
+            convRes_ = residual_(
+                fvc::div(phiRes_, URes_, "div(phi,U)")
+                // phiRes correction make small improvement, 
+                // but no-where close to conservation wo divFree corection
+                - URes_*fvc::div(phiRes_)
+            );
         }
 
         tURes_.clear();
         phiRes_.clear();
+    }
+    else
+    {
+        FatalErrorIn("Regularization order") << residualOrder_
+            << " is not recognized!\n" << " Avaialble orders is A6"
+            << abort(FatalError);
     }
 
     return convRes_;
