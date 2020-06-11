@@ -52,7 +52,8 @@ inline volVectorField Foam::RegularizationModel::convOperator
 )
 {
     // cross product of the convection operation
-    if(extpFilterFieldDivFree_)
+    // without regularization the phi is usually div. free
+    if(extpFilterFieldDivFree_ || !regOn_)
     {
        return (fvc::div(ssf_, vvf_, "div(phi,U)"));
     }
@@ -326,7 +327,7 @@ Foam::RegularizationModel::RegularizationModel
     // residualOrder_(residualDict_.lookupOrDefault<word>("residualOrder", "A6")),
     // resPtr_(LESfilter::New(mesh_, residualDict_)),
     // residual_(resPtr_()),
-    
+
     residualOrder_(regOrder_), // copy of regOrder
     residual_(filterPtr_()), // copy of the filter_
 
